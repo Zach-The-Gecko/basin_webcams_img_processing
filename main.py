@@ -202,8 +202,7 @@ def show_blue(img_path):
     # Preprocessing
     input_img = Image.open(img_path)
 
-    sharpened_input_image = ImageEnhance.Sharpness(
-        input_img).enhance(5).filter(ImageFilter.GaussianBlur(2))
+    sharpened_input_image = input_img.filter(ImageFilter.GaussianBlur(2))
 
     # input_img.show()
 
@@ -218,15 +217,15 @@ def show_blue(img_path):
         for y in range(height):
             r, g, b = input_img_pixels[x, y]
             h, s, v = color_conversions.rgb_to_hsv(r, g, b)
-            r, g, b = color_conversions.hsv_to_rgb(h, s*2, v*2.4)
 
-            if (not (b-((r+g)/2) < 10)):
+            # <----- This test is not working that well
+            if (not (b-((r+g)/2) < 0)):
                 new_img_pixels[x, y] = (math.floor(
                     r), math.floor(g), math.floor(b))
             else:
-                # new_img_pixels[x, y] = (0, 0, 0)
-                new_img_pixels[x, y] = (math.floor(
-                    r), math.floor(g), math.floor(b))
+                new_img_pixels[x, y] = (0, 0, 0)
+                # new_img_pixels[x, y] = (math.floor(
+                #     r), math.floor(g), math.floor(b))
     new_img.show()
 
 

@@ -21,7 +21,7 @@ HSV: Hue, Saturation, Value
 # http://en.wikipedia.org/wiki/HLS_color_space
 # http://en.wikipedia.org/wiki/HSV_color_space
 
-# Code shamelessly copied from https://github.com/python/cpython/blob/3.13/Lib/colorsys.py
+# Code shamelessly copied from https://github.com/python/cpython/blob/3.13/Lib/colorsys.py - Zach
 
 __all__ = ["rgb_to_yiq", "yiq_to_rgb", "rgb_to_hls", "hls_to_rgb",
            "rgb_to_hsv", "hsv_to_rgb"]
