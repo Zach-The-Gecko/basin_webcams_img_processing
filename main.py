@@ -8,8 +8,8 @@ from PIL import Image, ImageFilter
 import numpy as np
 
 
-def download_img_files(location, camera, time_duration_secs, interval_secs, timezone="America/Denver"):
-    current_seconds = round(math.floor(time.time()))
+def download_img_files(location, camera, time_duration_secs, interval_secs, long_ago=0, timezone="America/Denver"):
+    current_seconds = round(math.floor(time.time())) - long_ago
     start_time_mil = (current_seconds - time_duration_secs) * 1000
     end_time_mil = (current_seconds) * 1000
 
@@ -68,50 +68,159 @@ def get_median_snow_height_px(img_path, crop_dimensions):
     input_img = Image.open(img_path).crop(crop_dimensions).filter(
         ImageFilter.GaussianBlur(4))
 
-    input_img.save(f"{img_path}_blurry.jpg")
+    # input_img.show()
 
     input_img_pixels = input_img.load()
 
-    new_image = Image.new("RGB", input_img.size)
-    new_image_pixels = new_image.load()
-
     snow_path_heights = []
 
+    new_img = Image.new("RGB", input_img.size)
+    new_img_pixels = new_img.load()
+
     width, height = input_img.size
-    for x in range(0, width, 10):
+    for x in range(0, width, 5):
         for y in range(height-1, -1, -1):
             r, g, b = input_img_pixels[x, y]
             if (y == height - 1):
                 snow_path_heights.append(height - 1)
             if (b-((r+g)/2) < 10):
-
                 if (snow_path_heights[-1] - y < 3):
+                    new_img_pixels[x, y] = (255, 0, 0)
                     snow_path_heights[-1] = y
-                    new_image_pixels[x, y] = (255, 0, 0)
                 else:
                     break
         snow_path_heights[-1] = height - 1 - snow_path_heights[-1]
 
-    new_image.save(f"{img_path}computer_vision.jpg")
-
+    # new_img.show()
     no_outliars = remove_outliers(snow_path_heights)
 
     # Calculate the median of the remaining values
-    median_value = np.mean(no_outliars)
+    print(no_outliars)
+    median_value = np.max(no_outliars)
 
     return median_value
+
+
+def get_dimensions_of_bounding_box(img_path, initial_crop):
+    input_img = Image.open(img_path)
+
+    cropped_img = input_img.crop(initial_crop).filter(
+        ImageFilter.GaussianBlur(2))
+
+    # cropped_img.show()
+
+    width, height = cropped_img.size
+
+    pixels = cropped_img.load()
+
+    new_img = Image.new("RGB", (width, height))
+    new_img_pixels = new_img.load()
+
+    max_heights = []
+
+    for x in range(width):
+        for y in range(height):
+            r, g, b = pixels[x, y]
+            if (r < 100 and g < 100):  # <----- This test is not working that well
+                new_img_pixels[x, y] = (255, 255, 255)
+                max_heights.append(y)
+                break
+            if (y == height - 1):
+                max_heights.append(height - 1)
+
+    current_line = {"domain": [0, 0], "y_vals": [0]}
+    lines = []
+
+    new_img.show()
+
+    for x_val, height in enumerate(max_heights):
+        # print(abs(height))
+        if (abs(height - current_line["y_vals"][-1]) < 5):
+            current_line["y_vals"].append(height)
+            current_line["domain"][1] = x_val
+        else:
+
+            if (len(current_line["y_vals"]) > 150):
+                if (current_line["y_vals"][-1] - current_line["y_vals"][0] < 10):
+                    median_height = np.median(np.array(current_line["y_vals"]))
+                    lines.append(
+                        {"domain": current_line["domain"], "height": median_height})
+
+            # print(current_line)
+            current_line = {"domain": [x_val, x_val], "y_vals": [height]}
+
+    initial_left, initial_top, initial_right, initial_bottom = initial_crop
+
+    print(lines)
+
+    lines.sort(key=lambda x: x["height"])
+
+    if not lines:
+        return ()
+
+    return (initial_left + lines[0]["domain"][0] + 40, initial_top + lines[0]["height"], initial_left + lines[0]["domain"][1] - 65, initial_top + lines[0]["height"] + 795)
+
+
+# images = os.listdir("./sample_images")
 
 
 def pixels_to_inches(pixels):
     return pixels * (24/700)
 
 
-images = download_img_files(location="./test_imgs", camera="09f922af-169d-4949-9bb7-295c6a859daa",
-                            time_duration_secs=3600, interval_secs=10)
+extract_files = "./downloaded_images"
+
+# images = download_img_files(location=extract_files, camera="09f922af-169d-4949-9bb7-295c6a859daa",
+#                             time_duration_secs=200, interval_secs=0, long_ago=0)
+
+# extract_files = "./sample_images"
+
+images = os.listdir(f"{extract_files}")
+
+# max_snow_heights = []
+
+# for image in images:
+#     dimensions = get_dimensions_of_bounding_box(
+#         f"{extract_files}/{image}", (1180, 0, 1720, 1080))
+
+#     print(dimensions)
+#     if (not dimensions):
+#         continue
+
+#     Image.open(f"{extract_files}/{image}").crop(dimensions).show()
+#     pixels = get_median_snow_height_px(
+#         f"{extract_files}/{image}", dimensions)
+
+#     max_snow_heights.append(pixels_to_inches(pixels))
+
+# print(f"Estimated Snow Height: {
+#       np.max(np.array(max_snow_heights))} inches")
+
+
+def show_blue(img_path):
+    # Preprocessing
+    input_img = Image.open(img_path).filter(
+        ImageFilter.GaussianBlur(4))
+
+    # input_img.show()
+
+    input_img_pixels = input_img.load()
+
+    new_img = Image.new("RGB", input_img.size)
+    new_img_pixels = new_img.load()
+
+    width, height = input_img.size
+    for x in range(width):
+        for y in range(height):
+            r, g, b = input_img_pixels[x, y]
+            if (not (b-((r+g)/2) < 10)):
+                new_img_pixels[x, y] = (
+                    math.floor(r*.5), math.floor(g*.5), b*2)
+            else:
+                new_img_pixels[x, y] = (math.floor(
+                    r*.5), math.floor(g*.5), math.floor(b*.5))
+    new_img.show()
+
 
 for image in images:
-    pixels = get_median_snow_height_px(
-        f"./test_imgs/{image}", (1390, 90, 1510, 870))
-    print(f"Snow height in pixels: {pixels}")
-    print(f"Snow height in inches: {pixels_to_inches(pixels)}")
-    print()
+    show_blue(f"{extract_files}/{image}")
