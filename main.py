@@ -4,8 +4,9 @@ import os
 import time
 import math
 import datetime
-from PIL import Image, ImageFilter
+from PIL import Image, ImageFilter, ImageEnhance
 import numpy as np
+import color_conversions
 
 
 def download_img_files(location, camera, time_duration_secs, interval_secs, long_ago=0, timezone="America/Denver"):
@@ -121,7 +122,7 @@ def get_dimensions_of_bounding_box(img_path, initial_crop):
     for x in range(width):
         for y in range(height):
             r, g, b = pixels[x, y]
-            if (r < 100 and g < 100):  # <----- This test is not working that well
+            if (not (b-((r+g)/2) < 10)):  # <----- This test is not working that well
                 new_img_pixels[x, y] = (255, 255, 255)
                 max_heights.append(y)
                 break
@@ -168,16 +169,16 @@ def pixels_to_inches(pixels):
     return pixels * (24/700)
 
 
+# extract_files = "./sample_images"
+
 extract_files = "./downloaded_images"
 
 # images = download_img_files(location=extract_files, camera="09f922af-169d-4949-9bb7-295c6a859daa",
-#                             time_duration_secs=200, interval_secs=0, long_ago=0)
-
-# extract_files = "./sample_images"
+#                             time_duration_secs=1000, interval_secs=0, long_ago=0)
 
 images = os.listdir(f"{extract_files}")
 
-# max_snow_heights = []
+max_snow_heights = []
 
 # for image in images:
 #     dimensions = get_dimensions_of_bounding_box(
@@ -199,26 +200,33 @@ images = os.listdir(f"{extract_files}")
 
 def show_blue(img_path):
     # Preprocessing
-    input_img = Image.open(img_path).filter(
-        ImageFilter.GaussianBlur(4))
+    input_img = Image.open(img_path)
+
+    sharpened_input_image = ImageEnhance.Sharpness(
+        input_img).enhance(5).filter(ImageFilter.GaussianBlur(2))
 
     # input_img.show()
 
-    input_img_pixels = input_img.load()
+    input_img_pixels = sharpened_input_image.load()
 
     new_img = Image.new("RGB", input_img.size)
+
     new_img_pixels = new_img.load()
 
     width, height = input_img.size
     for x in range(width):
         for y in range(height):
             r, g, b = input_img_pixels[x, y]
+            h, s, v = color_conversions.rgb_to_hsv(r, g, b)
+            r, g, b = color_conversions.hsv_to_rgb(h, s*2, v*2.4)
+
             if (not (b-((r+g)/2) < 10)):
-                new_img_pixels[x, y] = (
-                    math.floor(r*.5), math.floor(g*.5), b*2)
-            else:
                 new_img_pixels[x, y] = (math.floor(
-                    r*.5), math.floor(g*.5), math.floor(b*.5))
+                    r), math.floor(g), math.floor(b))
+            else:
+                # new_img_pixels[x, y] = (0, 0, 0)
+                new_img_pixels[x, y] = (math.floor(
+                    r), math.floor(g), math.floor(b))
     new_img.show()
 
 
