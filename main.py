@@ -66,7 +66,7 @@ def remove_outliers(data):
 def get_median_snow_height_px(img_path, crop_dimensions):
     # Preprocessing
     input_img = Image.open(img_path).crop(crop_dimensions).filter(
-        ImageFilter.GaussianBlur(4))
+        ImageFilter.GaussianBlur(3))
 
     # input_img.show()
 
@@ -75,6 +75,7 @@ def get_median_snow_height_px(img_path, crop_dimensions):
     snow_path_heights = []
 
     new_img = Image.new("RGB", input_img.size)
+
     new_img_pixels = new_img.load()
 
     width, height = input_img.size
@@ -91,11 +92,11 @@ def get_median_snow_height_px(img_path, crop_dimensions):
                     break
         snow_path_heights[-1] = height - 1 - snow_path_heights[-1]
 
-    new_img.show()
+    # new_img.show()
     no_outliars = remove_outliers(snow_path_heights)
 
     # Calculate the median of the remaining values
-    print(no_outliars)
+    # print(no_outliars)
     median_value = np.median(no_outliars)
 
     return median_value
@@ -103,6 +104,8 @@ def get_median_snow_height_px(img_path, crop_dimensions):
 
 def get_dimensions_of_bounding_box(img_path, initial_crop):
     input_img = Image.open(img_path)
+
+    # input_img.show()
 
     cropped_img = input_img.crop(initial_crop).filter(
         ImageFilter.GaussianBlur(3))
@@ -121,7 +124,7 @@ def get_dimensions_of_bounding_box(img_path, initial_crop):
     for x in range(width):
         for y in range(height):
             r, g, b = pixels[x, y]
-            if (not b-((r+g)/2) < 10):  # <----- This test is not working that well
+            if (not b-((r+g)/2) < 10):
                 new_img_pixels[x, y] = (255, 255, 255)
                 max_heights.append(y)
                 break
@@ -131,7 +134,7 @@ def get_dimensions_of_bounding_box(img_path, initial_crop):
     current_line = {"domain": [0, 0], "y_vals": [0]}
     lines = []
 
-    new_img.show()
+    # new_img.show()
 
     for x_val, height in enumerate(max_heights):
         # print(abs(height))
@@ -168,7 +171,7 @@ def pixels_to_inches(pixels):
 def show_blue(img_path):
     # Preprocessing
     input_img = Image.open(img_path).filter(
-        ImageFilter.GaussianBlur(2))
+        ImageFilter.GaussianBlur(3))
 
     # input_img.show()
 
@@ -185,7 +188,7 @@ def show_blue(img_path):
                 new_img_pixels[x, y] = (255, 255, 255)
             else:
                 new_img_pixels[x, y] = (0, 0, 0)
-    new_img.show()
+    # new_img.show()
 
 
 extract_files = "./downloaded_images"
@@ -193,7 +196,9 @@ extract_files = "./downloaded_images"
 images = os.listdir(extract_files)
 
 # images = download_img_files(location=extract_files, camera="09f922af-169d-4949-9bb7-295c6a859daa",
-#                             time_duration_secs=500, interval_secs=0, long_ago=0)
+#                             time_duration_secs=1000, interval_secs=0, long_ago=0)
+
+# 1000 seconds is about 16 minutes, and the webcams take a picture every 5 minutes, so we should get about 3 images
 
 median_snow_heights = []
 
@@ -201,7 +206,7 @@ for image in images:
     dimensions = get_dimensions_of_bounding_box(
         f"{extract_files}/{image}", (1180, 0, 1720, 1080))
 
-    print(dimensions)
+    print(f"{dimensions}")
     if (not dimensions):
         continue
 
@@ -213,5 +218,5 @@ for image in images:
 
 print(f"Estimated Snow Height: {np.max(np.array(median_snow_heights))} inches")
 
-for image in images:
-    show_blue(f"{extract_files}/{image}")
+# for image in images:
+# show_blue(f"{extract_files}/{image}")
