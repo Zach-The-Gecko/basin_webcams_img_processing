@@ -103,6 +103,10 @@ def get_median_snow_height_px(img_path, crop_dimensions):
 
 
 def get_dimensions_of_bounding_box(img_path, initial_crop):
+    # New plan:
+    #       For each y val, get all the y and x values within a certain range
+    #       and find the clusters that are over 150, and test the distribution
+    #       of the x values
     input_img = Image.open(img_path)
 
     # input_img.show()
