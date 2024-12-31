@@ -134,15 +134,19 @@ def get_dimensions_of_bounding_box(img_path, initial_crop):
     current_line = {"domain": [0, 0], "y_vals": [0]}
     lines = []
 
-    # new_img.show()
+    new_img.show()
 
+    wrong_in_a_row = 0
     for x_val, height in enumerate(max_heights):
-        # print(abs(height))
         if (abs(height - current_line["y_vals"][-1]) < 5):
             current_line["y_vals"].append(height)
             current_line["domain"][1] = x_val
+        elif (wrong_in_a_row <= 3):
+            # current_line["y_vals"].append(height)
+            current_line["domain"][1] = x_val
+            wrong_in_a_row += 1
         else:
-
+            wrong_in_a_row = 0
             if (len(current_line["y_vals"]) > 150):
                 if (current_line["y_vals"][-1] - current_line["y_vals"][0] < 10):
                     median_height = np.median(np.array(current_line["y_vals"]))
@@ -156,7 +160,9 @@ def get_dimensions_of_bounding_box(img_path, initial_crop):
 
     print(lines)
 
-    lines.sort(key=lambda x: x["height"])
+    lines.sort(key=lambda x: x["height"], reverse=False)
+
+    # print(f"Chosen Line: {lines[0]}")
 
     if not lines:
         return ()
@@ -188,7 +194,7 @@ def show_blue(img_path):
                 new_img_pixels[x, y] = (255, 255, 255)
             else:
                 new_img_pixels[x, y] = (0, 0, 0)
-    # new_img.show()
+    new_img.show()
 
 
 extract_files = "./downloaded_images"
@@ -219,4 +225,5 @@ for image in images:
 print(f"Estimated Snow Height: {np.max(np.array(median_snow_heights))} inches")
 
 # for image in images:
-# show_blue(f"{extract_files}/{image}")
+#     get_dimensions_of_bounding_box(
+#         f"{extract_files}/{image}", (1180, 0, 1720, 1080))
